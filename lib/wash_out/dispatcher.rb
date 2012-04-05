@@ -25,7 +25,7 @@ module WashOut
         Nori.convert_tags_to { |tag| tag.to_sym }
       end
 
-      params = Nori.parse(request.body)
+      params = Nori.parse(request.body.read)
 
       xml_data = params.values_at(:envelope, :Envelope).compact.first
       xml_data = xml_data.values_at(:body, :Body).compact.first
@@ -82,21 +82,27 @@ module WashOut
       result = { 'value' => result } unless result.is_a? Hash
       result = HashWithIndifferentAccess.new(result)
 
-      inject = lambda {|data, source_spec|
-        spec = source_spec.clone
+      inject = lambda {|data, map|
+        result_spec = []
 
-        spec.each_with_index do |param, i|
+        map.each_with_index do |param, i|
+          result_spec[i] = param.flat_copy
+
+          # Inline complex structure
           if param.struct? && !param.multiplied
-            spec[i].map = inject.call(data[param.name], param.map)
+            result_spec[i].map = inject.call(data[param.name], param.map)
+
+          # Inline array of complex structures
           elsif param.struct? && param.multiplied
-            spec[i].map = data[param.name].map{|e| inject.call(e, param.map)}
+            result_spec[i].map = data[param.name].map{|e| inject.call(e, param.map)}
+
           else
-            spec[i] = param.flat_copy
-            spec[i].value = data[param.name]
+            result_spec[i].value = data[param.name]
+
           end
         end
 
-        return spec
+        return result_spec
       }
 
       render :template => 'wash_with_soap/response',

@@ -48,8 +48,8 @@ describe WashOut do
     client.wsdl.soap_actions.should == [:answer, :get_area]
 
     x = xml[:definitions][:types][:schema][:complex_type].find{|x| x[:'@name'] == 'center'}[:sequence][:element].find{|x| x[:'@name'] == 'x'}
-    x[:'@xsi:min_occurs'].should == "0"
-    x[:'@xsi:max_occurs'].should == "unbounded"
+    x[:'@min_occurs'].should == "0"
+    x[:'@max_occurs'].should == "unbounded"
 
     xml[:definitions][:binding][:operation].map{|e| e[:'@name']}.should == ['answer', 'getArea']
   end
@@ -361,7 +361,7 @@ describe WashOut do
     }
   end
 
-    it "should handle return of structs in structs in arrays" do
+  it "should handle return of structs in structs in arrays" do
     mock_controller do
       soap_action "rumba",
         :args => nil,
@@ -446,12 +446,10 @@ describe WashOut do
         },
         {
           :zombies => "def",
-          :puppies => [
-            {
-              :kittens => "4",
-              :"@xsi:type" => "tns:puppies"
-            }
-          ],
+          :puppies => {
+            :kittens => "4",
+            :"@xsi:type" => "tns:puppies"
+          },
           :"@xsi:type"=>"tns:rumbas"
         }
       ]
